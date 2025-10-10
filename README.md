@@ -1,6 +1,10 @@
 # Solucion.ar
 
-Esta es una aplicacion para el frontend de la aplicacion Solucion.ar en TypeScript
+Esta es una aplicacion para el frontend de la aplicacion Solucion.ar en TypeScript, creada usando ViteJS y SWC
+
+[Mas informacion sobre ViteJS](https://vitejs.dev/)
+
+[Mas informacion sobre SWC](https://swc.rs/)
 
 
 ## Installation
