@@ -14,9 +14,13 @@ export async function postForm<T>(path: string, data: Record<string, string>): P
 }
 
 export async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const token = getToken();
+  const headers: Record<string,string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
   if (!res.ok) {

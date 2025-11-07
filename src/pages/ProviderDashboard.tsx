@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BASE_URL, getToken } from "../services/api";
+import { listMyServices, type Service } from "../services/services";
 
 type ProviderDashboardData = {
   provider_id: number;
@@ -12,6 +13,7 @@ export default function ProviderDashboard() {
   const [data, setData] = useState<ProviderDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [myServices, setMyServices] = useState<Service[]>([]);
 
   useEffect(() => {
     const token = getToken();
@@ -24,6 +26,7 @@ export default function ProviderDashboard() {
       .then(setData)
       .catch((e) => setErr(e.message))
       .finally(() => setLoading(false));
+    listMyServices().then(setMyServices).catch(()=>{});
   }, []);
 
   return (
@@ -39,6 +42,21 @@ export default function ProviderDashboard() {
                 <li>Reservas totales: {data?.totals?.reservations_total ?? 0}</li>
                 <li>Reservas completadas: {data?.totals?.reservations_completed ?? 0}</li>
                 <li>Favoritos: {data?.totals?.favorites_count ?? 0}</li>
+              </ul>
+              <div style={{marginTop:12}}>
+                <a className="btn btn--primary" href="/services/new">Crear nuevo servicio</a>
+              </div>
+            </div>
+            <div className="card" style={{marginTop:16}}>
+              <h3 className="h3">Mis servicios</h3>
+              {myServices.length===0 && <p className="muted">Todavía no creaste servicios.</p>}
+              <ul>
+                {myServices.map(s => (
+                  <li key={s.id} style={{display:'flex', justifyContent:'space-between', gap:8}}>
+                    <span>{s.title}</span>
+                    <a className="btn btn--ghost" href={`/services/${s.id}`}>Ver</a>
+                  </li>
+                ))}
               </ul>
             </div>
             <div className="card" style={{marginTop:16}}>
