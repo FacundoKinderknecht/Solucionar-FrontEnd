@@ -2,8 +2,59 @@
 #app-root{min-height:100vh;display:flex;flex-direction:column}
 main{flex:1;padding:40px 0}
 
+.backbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	padding: 12px 0;
+}
+.backbar .container {
+	display: flex;
+	align-items: center;
+}
+.back-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--primary);
+	text-decoration: none;
+	background: rgba(64, 120, 255, 0.08);
+	padding: 8px 12px;
+	border-radius: 999px;
+	transition: background .2s ease;
+}
+.back-link::before {
+	content: "←";
+	font-size: 18px;
+}
+.back-link:hover { background: rgba(64, 120, 255, 0.14); }
+
+/* Sidebar sizing */
+.account-layout {
+	grid-template-columns: 300px 1fr;
+}
+.account-layout{ align-items: stretch; }
+.sidebar .btn {
+	padding: 12px 14px;
+	font-size: 16px;
+}
+.sidebar .btn.active{ background: rgba(64,120,255,.1); }
+/* Larger sidebar for better presence */
+.sidebar{ min-height: 70vh; }
+
 /* Card padding refinement */
 .card{padding:20px;border-radius:12px}
 
 /* Utility */
 .muted-small{color:var(--muted);font-size:14px}
+
+/* Floating blocks subtle animation */
+@keyframes floatPulse {
+	0% { transform: translateY(0); }
+	50% { transform: translateY(-6px); }
+	100% { transform: translateY(0); }
+}
+
+/* Hide horizontal scrollbar when using auto-scroll tracks */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

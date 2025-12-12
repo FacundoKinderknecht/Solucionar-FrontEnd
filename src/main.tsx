@@ -37,3 +37,29 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode><RouterProvider router={router} /></React.StrictMode>
 );
+
+// Optional: load Crisp chat widget if website ID is provided
+const envId = (import.meta as any).env?.VITE_CRISP_WEBSITE_ID as string | undefined;
+const winId = (window as any).__CRISP_ID__ as string | undefined;
+const lsId = localStorage.getItem('CRISP_WEBSITE_ID') || undefined;
+const CRISP_ID = envId || winId || lsId;
+console.log('CRISP_WEBSITE_ID (env|window|ls):', envId, winId, lsId);
+if (CRISP_ID) {
+  (window as any).$crisp = [];
+  (window as any).CRISP_WEBSITE_ID = CRISP_ID;
+  const d = document;
+  const s = d.createElement("script");
+  s.src = "https://client.crisp.chat/l.js";
+  s.async = true;
+  s.onload = () => {
+    try {
+      // Ensure chat widget is visible; optionally open on first load
+      (window as any).$crisp?.push(["do", "chat:show"]);
+      // Delay open slightly to avoid intrusive auto-open; uncomment to auto-open
+      // setTimeout(() => (window as any).$crisp?.push(["do", "chat:open"]), 300);
+    } catch {}
+  };
+  d.getElementsByTagName("head")[0].appendChild(s);
+} else {
+  console.warn('Crisp ID not set. Add VITE_CRISP_WEBSITE_ID in Solucionar-FrontEnd/.env, or set window.__CRISP_ID__ in index.html, or localStorage.CRISP_WEBSITE_ID via DevTools.');
+}
