@@ -1,42 +1,60 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* App layout tweaks */
+#app-root{min-height:100vh;display:flex;flex-direction:column}
+main{flex:1;padding:40px 0}
+
+.backbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	padding: 12px 0;
+}
+.backbar .container {
+	display: flex;
+	align-items: center;
+}
+.back-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--primary);
+	text-decoration: none;
+	background: rgba(64, 120, 255, 0.08);
+	padding: 8px 12px;
+	border-radius: 999px;
+	transition: background .2s ease;
+}
+.back-link::before {
+	content: "←";
+	font-size: 18px;
+}
+.back-link:hover { background: rgba(64, 120, 255, 0.14); }
+
+/* Sidebar sizing */
+.account-layout {
+	grid-template-columns: 300px 1fr;
+}
+.account-layout{ align-items: stretch; }
+.sidebar .btn {
+	padding: 12px 14px;
+	font-size: 16px;
+}
+.sidebar .btn.active{ background: rgba(64,120,255,.1); }
+/* Larger sidebar for better presence */
+.sidebar{ min-height: 70vh; }
+
+/* Card padding refinement */
+.card{padding:20px;border-radius:12px}
+
+/* Utility */
+.muted-small{color:var(--muted);font-size:14px}
+
+/* Floating blocks subtle animation */
+@keyframes floatPulse {
+	0% { transform: translateY(0); }
+	50% { transform: translateY(-6px); }
+	100% { transform: translateY(0); }
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* Hide horizontal scrollbar when using auto-scroll tracks */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

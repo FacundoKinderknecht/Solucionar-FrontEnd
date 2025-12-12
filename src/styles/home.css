@@ -1,0 +1,71 @@
+/* Home page guide matching styles (relocated to styles/) */
+
+.home { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:#0f172a; }
+.container { max-width: 1200px; margin: 0 auto; }
+
+/* Buttons */
+.btn { appearance:none; border-radius: 12px; padding: 10px 16px; font-weight: 700; cursor:pointer; transition: transform .06s ease, box-shadow .2s ease, background .2s ease, color .2s ease; }
+.btn:active { transform: translateY(1px); }
+.btn--primary { background:#3d6df5; /* slightly darker blue */ color:#fff; border:1px solid #3058c8; box-shadow: 0 8px 20px rgba(13, 40, 112, 0.16); text-align:center; }
+.btn--primary:hover { background:#355fe0; /* hover slightly darker */ }
+
+/* Ensure buttons have consistent sizing */
+.card .btn--primary {
+	min-height: 28px; /* 30% thinner vs 40px */
+}
+.btn--primary:hover { background:#254bdb; }
+.btn--ghost { background:#fff; color:#0f172a; border:1px solid #e7eaf0; }
+
+/* Chips row */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display:none; }
+
+/* Cards */
+.card { border:1px solid #e7eaf0; border-radius:16px; background:#fff; box-shadow:0 12px 28px rgba(13,40,112,0.10); }
+.card-image { background:#f5f7fb; display:flex; align-items:center; justify-content:center; color:#94a3b8; }
+.card-image.has-image { color:inherit; }
+.card-body { padding: 20px; }
+.card-title { font-size: 20px; font-weight:800; }
+.card-text { font-size: 15px; color:#556; line-height:1.5; }
+.card-actions { margin-top: 14px; display:flex; gap:10px; }
+
+/* Steps */
+.step { border:1px solid #e7eaf0; border-radius:16px; padding:20px; background:#fff; box-shadow:0 8px 20px rgba(13,40,112,0.06); display:flex; align-items:center; gap:14px; }
+.step-icon { width:54px; height:54px; border-radius:50%; background:#e2e8f0; }
+.step-title { font-weight:800; font-size:18px; }
+.step-desc { font-size:15px; color:#556; }
+
+/* Track arrows and fades */
+.track-wrapper { position: relative; }
+.track-arrow { position:absolute; top:50%; transform:translateY(-50%); border-radius:999px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:rgba(13,40,112,0.08); color:#0d2870; border:1px solid #e7eaf0; box-shadow:0 8px 16px rgba(13,40,112,0.08); }
+.track-arrow.left { left:4px; }
+.track-arrow.right { right:4px; }
+.fade.left { position:absolute; left:0; top:0; bottom:0; width:40px; pointer-events:none; background:linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%); }
+.fade.right { position:absolute; right:0; top:0; bottom:0; width:40px; pointer-events:none; background:linear-gradient(270deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%); }
+
+/* Inputs */
+.input, .textarea { width: 100%; border:1px solid #e7eaf0; border-radius:12px; padding:12px; font-size:15px; color:#0f172a; background:#fff; }
+.input:focus, .textarea:focus { outline: none; border-color:#2f59ff; box-shadow: 0 0 0 4px rgba(47,89,255,.12); }
+
+/* Typography helpers */
+.display { font-weight: 800; }
+
+/* Argentina flag text fill for brand */
+.brand-argentina {
+	/* Celeste reduced; center sun (yellow) with white separators */
+	background-image: linear-gradient(90deg,
+		#6ec1ff 0%,      /* celeste left start */
+		#6ec1ff 40%,     /* celeste left end */
+		#ffffff 40%,     /* white start */
+		#ffffff 47%,     /* white end before sun */
+		#f4c542 47%,     /* sun yellow start */
+		#f4c542 53%,     /* sun yellow end */
+		#ffffff 53%,     /* white start after sun */
+		#ffffff 60%,     /* white end */
+		#6ec1ff 60%,     /* celeste right start */
+		#6ec1ff 100%     /* celeste right end */
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
