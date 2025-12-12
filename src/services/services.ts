@@ -69,6 +69,23 @@ export const listServiceImages = (serviceId: number) => getJSON<ServiceImage[]>(
 export const setServiceSchedule = (serviceId: number, slots: ServiceSchedule[]) => postJSON<ServiceSchedule[]>(`/servicios/${serviceId}/horarios`, slots);
 export const listServiceSchedule = (serviceId: number) => getJSON<ServiceSchedule[]>(`/servicios/${serviceId}/horarios`);
 
+// Bookings
+export type Booking = {
+  id: number;
+  service_id: number;
+  customer_id: number;
+  provider_id: number;
+  status: string; // ej: PENDING, CONFIRMED, CANCELED
+  created_at: string;
+  updated_at: string;
+  service: Service;
+};
+
+// Use trailing slash to avoid 307 redirect from FastAPI when route is defined as "/"
+export const bookService = (serviceId: number) => postJSON<Booking>("/reservas/", { service_id: serviceId });
+
+export const listMyBookings = () => getJSON<Booking[]>("/reservas/mias");
+
 // Mine
 export const listMyServices = (active?: boolean) => {
   const params = new URLSearchParams();

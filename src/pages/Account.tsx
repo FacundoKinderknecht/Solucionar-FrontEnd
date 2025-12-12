@@ -61,6 +61,12 @@ export default function Account() {
         </div>
 
         <div className="card" style={{marginTop:16}}>
+          <h3 className="h3">Mis Reservas</h3>
+          <p>Ver el historial de todos los servicios que has reservado.</p>
+          <Link className="btn btn--primary" to="/my-bookings">Ver mis reservas</Link>
+        </div>
+
+        <div className="card" style={{marginTop:16}}>
           <h3 className="h3">Proveedores</h3>
           {profile.role === 'PROVIDER' ? (
             <>

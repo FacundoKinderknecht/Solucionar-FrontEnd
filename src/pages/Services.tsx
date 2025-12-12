@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listCategories, listServices, type Category, type Service } from "../services/services";
+import { listCategories, listServices, type Category, type Service, bookService } from "../services/services";
 import { Link } from "react-router-dom";
 
 export default function Services() {
@@ -9,6 +9,7 @@ export default function Services() {
   const [items, setItems] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [bookingState, setBookingState] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     listCategories().then(setCategories).catch(()=>{});
@@ -27,6 +28,22 @@ export default function Services() {
   }
 
   useEffect(() => { (async ()=>{ await listServices().then(setItems).catch(()=>{}); })(); }, []);
+
+  async function handleBookService(serviceId: number) {
+    if (!window.confirm("¿Confirmas que deseas reservar este servicio?")) {
+      return;
+    }
+    setBookingState(prev => ({ ...prev, [serviceId]: true }));
+    setErr(null);
+    try {
+      await bookService(serviceId);
+      alert("¡Servicio reservado con éxito!");
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBookingState(prev => ({ ...prev, [serviceId]: false }));
+    }
+  }
 
   return (
     <section className="section">
@@ -48,8 +65,12 @@ export default function Services() {
                 <h3 className="h3">{s.title}</h3>
                 <div className="muted">{s.currency} {s.price.toFixed(2)} • {s.duration_min} min</div>
                 <p className="muted" style={{marginTop:8}}>{s.description.slice(0,140)}{s.description.length>140?'…':''}</p>
-                <div style={{marginTop:8}}>
+                <div style={{marginTop:8, display: 'flex', gap: '8px'}}>
                   <Link className="btn btn--ghost" to={`/services/${s.id}`}>Ver detalle</Link>
+                  <button 
+                    className="btn btn--primary" 
+                    onClick={() => handleBookService(s.id)} 
+                    disabled={loading || bookingState[s.id]}>{bookingState[s.id] ? 'Reservando...' : 'Reservar'}</button>
                 </div>
               </div>
             </div>
