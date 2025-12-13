@@ -20,6 +20,8 @@ export default function CreateService() {
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [availabilityStart, setAvailabilityStart] = useState<string | ''>('');
+  const [availabilityEnd, setAvailabilityEnd] = useState<string | ''>('');
 
   useEffect(() => { listCategories().then(setCategories).catch(()=> setErr('No se pudieron cargar categorías')).finally(()=> setLoadingCategories(false)); }, []);
 
@@ -33,6 +35,10 @@ export default function CreateService() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault(); setErr(null);
     try {
+      // validate availability dates
+      if (availabilityStart && availabilityEnd) {
+        if (new Date(availabilityStart) > new Date(availabilityEnd)) throw new Error("La fecha de inicio de disponibilidad no puede ser posterior a la de fin.");
+      }
       if (!categoryId) throw new Error('Seleccioná categoría');
       if (!title.trim()) throw new Error('Título requerido');
       if (!description.trim()) throw new Error('Descripción requerida');
@@ -48,6 +54,8 @@ export default function CreateService() {
         area_type: areaType,
         price_to_agree: priceToAgree,
         duration_min: indefinite ? 0 : Number(durationMin),
+        availability_start_date: availabilityStart || undefined,
+        availability_end_date: availabilityEnd || undefined,
       };
       if (!priceToAgree) payload.price = Number(price);
       if (areaType === 'PERSONALIZADO') payload.location_note = locationNote.trim();
@@ -64,6 +72,17 @@ export default function CreateService() {
       <div className="container">
         <h1 className="h2">Crear servicio</h1>
         <form className="card form" onSubmit={onSubmit}>
+          <div className="form-row" style={{display:'flex', gap:8}}>
+            <div>
+              <label className="label">Disponibilidad desde</label>
+              <input type="date" value={availabilityStart} onChange={e=> setAvailabilityStart(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Disponibilidad hasta</label>
+              <input type="date" value={availabilityEnd} onChange={e=> setAvailabilityEnd(e.target.value)} />
+            </div>
+          </div>
+
           <div className="form-row">
             <label className="label">Categoría</label>
             <select value={categoryId} onChange={e=> setCategoryId(e.target.value? Number(e.target.value): '')} disabled={loadingCategories} required>
