@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App";
-import "./index.css";
+import "./styles/global.css";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -41,14 +41,22 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 );
 
 // Optional: load Crisp chat widget if website ID is provided
-const envId = (import.meta as any).env?.VITE_CRISP_WEBSITE_ID as string | undefined;
-const winId = (window as any).__CRISP_ID__ as string | undefined;
+type CrispEnv = ImportMeta & { env: { VITE_CRISP_WEBSITE_ID?: string } };
+type CrispWindow = Window & {
+  $crisp?: Array<[string, ...unknown[]]>;
+  CRISP_WEBSITE_ID?: string;
+  __CRISP_ID__?: string;
+};
+
+const envId = (import.meta as CrispEnv).env?.VITE_CRISP_WEBSITE_ID;
+const winId = (window as CrispWindow).__CRISP_ID__;
 const lsId = localStorage.getItem('CRISP_WEBSITE_ID') || undefined;
 const CRISP_ID = envId || winId || lsId;
 console.log('CRISP_WEBSITE_ID (env|window|ls):', envId, winId, lsId);
 if (CRISP_ID) {
-  (window as any).$crisp = [];
-  (window as any).CRISP_WEBSITE_ID = CRISP_ID;
+  const crispWindow = window as CrispWindow;
+  crispWindow.$crisp = crispWindow.$crisp ?? [];
+  crispWindow.CRISP_WEBSITE_ID = CRISP_ID;
   const d = document;
   const s = d.createElement("script");
   s.src = "https://client.crisp.chat/l.js";
@@ -56,10 +64,12 @@ if (CRISP_ID) {
   s.onload = () => {
     try {
       // Ensure chat widget is visible; optionally open on first load
-      (window as any).$crisp?.push(["do", "chat:show"]);
+      crispWindow.$crisp?.push(["do", "chat:show"]);
       // Delay open slightly to avoid intrusive auto-open; uncomment to auto-open
-      // setTimeout(() => (window as any).$crisp?.push(["do", "chat:open"]), 300);
-    } catch {}
+      // setTimeout(() => crispWindow.$crisp?.push(["do", "chat:open"]), 300);
+    } catch (error) {
+      console.error('Error initializing Crisp chat', error);
+    }
   };
   d.getElementsByTagName("head")[0].appendChild(s);
 } else {

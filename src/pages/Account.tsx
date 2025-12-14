@@ -46,10 +46,10 @@ export default function Account() {
   if (!profile) return <div className="container"><p>Sin perfil</p></div>;
 
   return (
-    <section className="section">
-      <div className="container account-layout" style={{display:'grid', gap:16, minHeight:'70vh'}}>
-        <aside className="card sidebar" style={{padding:0, display:'flex', flexDirection:'column'}}>
-          <div className="list" style={{display:'flex', flexDirection:'column', flex:1}}>
+    <section className="section" style={{padding:'64px 0 0'}}>
+      <div className="container account-layout">
+        <aside className="card account-sidebar" style={{padding:0}}>
+          <div className="list">
             <button className={`btn btn--ghost ${activeTab==='profile'?'active':''}`} onClick={()=>setActiveTab('profile')}>Mi perfil</button>
             {profile.role === 'PROVIDER' && (
               <button className={`btn btn--ghost ${activeTab==='my-services'?'active':''}`} onClick={()=>setActiveTab('my-services')}>Mis servicios publicados</button>
@@ -64,12 +64,15 @@ export default function Account() {
             )}
           </div>
         </aside>
-        <main>
+        <main style={{display:'flex', height:'100%'}}>
+          {/* Uniform card sizing */}
+          {/** Use consistent minHeight and maxWidth for all cards in account */}
+          {/** Styles applied inline for minimal change; can be moved to CSS later */}
           {activeTab==='profile' && (
-            <div className="card form">
+            <div className="card form account-card" style={{flex:1}}>
               <h2 className="h2">Mi perfil</h2>
               <p className="muted">Gestioná tus datos personales</p>
-              <form onSubmit={onSave}>
+              <form onSubmit={onSave} className="account-card__content">
                 <div className="form-row"><label className="label">Nombre</label>
                   <input value={profile.full_name} onChange={e=>setProfile({...profile, full_name: e.target.value})} /></div>
                 <div className="form-row"><label className="label">Email</label>
@@ -81,38 +84,67 @@ export default function Account() {
                 <div className="form-row"><label className="label">Ciudad</label>
                   <input value={profile.city ?? ''} onChange={e=>setProfile({...profile, city: e.target.value})} /></div>
                 {err && <div className="muted" style={{color:'#b00020'}}>{err}</div>}
-                <div className="actions"><button className="btn btn--primary" disabled={saving}>{saving? 'Guardando…':'Guardar'}</button></div>
+                <div className="actions account-card__actions"><button className="btn btn--primary" disabled={saving}>{saving? 'Guardando…':'Guardar'}</button></div>
               </form>
             </div>
           )}
 
           {activeTab==='my-services' && profile.role==='PROVIDER' && (
-            <div className="card">
+            <div className="card account-card" style={{flex:1}}>
               <h2 className="h2">Mis servicios publicados</h2>
               <p className="muted">Total publicados: {myServices.length}</p>
-              {myServices.length===0 ? (
-                <p className="muted">Todavía no creaste servicios.</p>
-              ) : (
-                <ul>
-                  {myServices.map(s => (
-                    <li key={s.id} style={{display:'flex', justifyContent:'space-between', gap:8}}>
-                      <span>{s.title}</span>
-                      <span className="muted">{s.currency} {s.price_to_agree? 'a convenir': s.price}</span>
-                      <a className="btn btn--ghost" href={`/services/${s.id}`}>Ver</a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div style={{marginTop:12}}>
-                <Link className="btn btn--primary" to="/services/new">Crear nuevo servicio</Link>
+              <div className="account-card__content">
+                {myServices.length===0 ? (
+                  <p className="muted">Todavía no creaste servicios.</p>
+                ) : (
+                  <div className="services-table-wrapper">
+                    <table className="services-table">
+                      <thead>
+                        <tr>
+                          <th>Servicio</th>
+                          <th>Precio</th>
+                          <th>Estado</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {myServices.map((s) => (
+                          <tr key={s.id}>
+                            <td>
+                              <div className="service-title">{s.title}</div>
+                              <div className="muted-small">ID #{s.id}</div>
+                            </td>
+                            <td>{s.price_to_agree? 'A convenir' : `${s.currency} ${s.price.toLocaleString()}`}</td>
+                            <td>
+                              <span className={`chip ${s.active ? 'chip--success' : 'chip--muted'}`}>
+                                {s.active ? 'Activo' : 'Inactivo'}
+                              </span>
+                            </td>
+                            <td style={{textAlign:'right'}}>
+                              <div className="services-actions">
+                                <a className="btn btn--ghost" href={`/services/${s.id}`}>Ver</a>
+                                <a className="btn btn--ghost" href={`/services/${s.id}/edit`}>Editar</a>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <div className="account-card__actions" style={{marginTop:12}}>
+                  <Link className="btn btn--primary" to="/services/new">Crear nuevo servicio</Link>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab==='orders' && (
-            <div className="card">
+            <div className="card account-card" style={{flex:1}}>
               <h2 className="h2">Servicios pedidos</h2>
-              <p className="muted">Proximamente: ver tus solicitudes de servicios.</p>
+              <div className="account-card__content">
+                <p className="muted">Proximamente: ver tus solicitudes de servicios.</p>
+              </div>
             </div>
           )}
 
@@ -135,13 +167,15 @@ export default function Account() {
               <Link className="btn btn--primary" to="/become-provider">Quiero ser proveedor</Link>
             </>
           {activeTab==='metrics' && profile.role==='PROVIDER' && (
-            <div className="card">
+            <div className="card account-card" style={{flex:1}}>
               <h2 className="h2">Métricas</h2>
-              <ul>
-                <li>Servicios publicados: {myServices.length}</li>
-                <li>Visualizaciones: próximamente</li>
-                <li>Valoración media: próximamente</li>
-              </ul>
+              <div className="account-card__content">
+                <ul>
+                  <li>Servicios publicados: {myServices.length}</li>
+                  <li>Visualizaciones: próximamente</li>
+                  <li>Valoración media: próximamente</li>
+                </ul>
+              </div>
             </div>
           )}
         </main>
