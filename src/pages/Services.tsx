@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { listCategories, listServices, listServiceImages, type Category, type Service } from "../services/services";
+import { listCategories, listServices, listServiceImages, type Category, type Service, bookService } from "../services/services";
 import { Link, useLocation } from "react-router-dom";
 
 export default function Services() {
@@ -13,6 +13,10 @@ export default function Services() {
   const [priceMin, setPriceMin] = useState<string>("");
   const [priceMax, setPriceMax] = useState<string>("");
   const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
+  const [bookingState, setBookingState] = useState<{ [key: number]: boolean }>({});
+  // new: which service booking panel is open and chosen datetime per service
+  const [bookingOpen, setBookingOpen] = useState<number | null>(null);
+  const [bookingDatetime, setBookingDatetime] = useState<{ [key: number]: string }>({});
 
   const location = useLocation();
   useEffect(() => {
@@ -67,6 +71,60 @@ export default function Services() {
       return true;
     });
   }, [items, priceMin, priceMax, onlyAvailable]);
+
+  // new: validate against service availability dates (if present)
+  function validateDatetimeForService(svc: Service, iso: string) {
+    if (!iso) return "Elegí fecha y hora";
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return "Fecha inválida";
+    if ((svc as any).availability_start_date) {
+      const start = new Date((svc as any).availability_start_date);
+      if (dt < start) return `Fecha anterior a disponibilidad (${start.toLocaleDateString()})`;
+    }
+    if ((svc as any).availability_end_date) {
+      const end = new Date((svc as any).availability_end_date);
+      if (dt > end) return `Fecha posterior a disponibilidad (${end.toLocaleDateString()})`;
+    }
+    return null;
+  }
+
+  async function handleOpenBooking(svcId: number) {
+    setErr(null);
+    setBookingOpen(svcId);
+    // preset to next hour
+    const now = new Date();
+    now.setMinutes(0,0,0);
+    now.setHours(now.getHours()+1);
+    const isoLocal = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    setBookingDatetime(prev => ({ ...prev, [svcId]: isoLocal }));
+  }
+
+  async function handleCancelBooking(svcId:number) {
+    setBookingOpen(prev => prev === svcId ? null : prev);
+  }
+
+  async function handleConfirmBooking(svc: Service) {
+    const svcId = svc.id;
+    const chosen = bookingDatetime[svcId];
+    const validationError = validateDatetimeForService(svc, chosen);
+    if (validationError) { setErr(validationError); return; }
+
+    if (!window.confirm("¿Confirmas la reserva en la fecha y hora seleccionada?")) return;
+
+    setBookingState(prev => ({ ...prev, [svcId]: true }));
+    setErr(null);
+    try {
+      // call bookService with datetime (backend expects reservation_datetime in payload)
+      // assume bookService(serviceId, isoDatetime) is implemented in services client
+      await bookService(svcId, new Date(chosen).toISOString());
+      alert("¡Servicio reservado con éxito!");
+      setBookingOpen(null);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBookingState(prev => ({ ...prev, [svcId]: false }));
+    }
+  }
 
   return (
     <section className="section">

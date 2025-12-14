@@ -22,6 +22,8 @@ export default function EditService() {
   const [locationNote, setLocationNote] = useState('');
   const [images, setImages] = useState<ServiceImage[]>([]);
   const [schedule, setSchedule] = useState<ServiceSchedule[]>([]);
+  const [availabilityStart, setAvailabilityStart] = useState<string | ''>('');
+  const [availabilityEnd, setAvailabilityEnd] = useState<string | ''>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -42,6 +44,8 @@ export default function EditService() {
   setAreaType(s.area_type);
   setPriceToAgree(s.price_to_agree);
   setLocationNote(s.location_note ?? '');
+        setAvailabilityStart((s as any).availability_start_date ?? '');
+        setAvailabilityEnd((s as any).availability_end_date ?? '');
         setImages(imgs); setSchedule(sch);
       } catch (e) { setErr((e as Error).message); }
       finally { setLoading(false); }
@@ -60,6 +64,10 @@ export default function EditService() {
     e.preventDefault(); setErr(null); setSaving(true);
     try {
       if (!svc) return;
+      // validate availability
+      if (availabilityStart && availabilityEnd) {
+        if (new Date(availabilityStart) > new Date(availabilityEnd)) throw new Error("La fecha de inicio de disponibilidad no puede ser posterior a la de fin.");
+      }
       if (!title.trim()) throw new Error("Título requerido");
       if (!description.trim()) throw new Error("Descripción requerida");
       if (!categoryId) throw new Error("Seleccioná categoría");
@@ -77,6 +85,8 @@ export default function EditService() {
         area_type: areaType,
         price_to_agree: priceToAgree,
         duration_min: indefinite ? 0 : durationMin,
+       availability_start_date: availabilityStart || undefined,
+       availability_end_date: availabilityEnd || undefined,
       };
       if (!priceToAgree) payload.price = price;
       if (areaType === 'PERSONALIZADO') payload.location_note = locationNote.trim();
@@ -128,7 +138,8 @@ export default function EditService() {
             </div>
           </div>
           <div className="form-row" style={{display:'flex', gap:8, flexWrap:'wrap'}}>
-            <div><label className="label">Localización</label>
+            <div>
+              <label className="label">Localización</label>
               <select value={areaType} onChange={e=>setAreaType(e.target.value)}>
                 <option value="PRESENCIAL">Presencial</option>
                 <option value="REMOTO">Remoto</option>
@@ -137,6 +148,14 @@ export default function EditService() {
                 <option value="PROVIDER_LOCATION">(Legacy) Proveedor</option>
               </select>
             </div>
++           <div>
++             <label className="label">Disponibilidad desde</label>
++             <input type="date" value={availabilityStart} onChange={e=>setAvailabilityStart(e.target.value)} />
++           </div>
++           <div>
++             <label className="label">Disponibilidad hasta</label>
++             <input type="date" value={availabilityEnd} onChange={e=>setAvailabilityEnd(e.target.value)} />
++           </div>
             {areaType === 'PRESENCIAL' && (
               <div><label className="label">Radio (km) opcional</label>
                 <input type="number" min={0} value={radiusKm} onChange={e=>setRadiusKm(e.target.value===''? '': Number(e.target.value))} />

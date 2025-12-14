@@ -14,6 +14,7 @@ import CreateService from "./pages/CreateService";
 import EditService from "./pages/EditService";
 import BecomeProvider from "./pages/BecomeProvider";
 import Account from "./pages/Account";
+import MyBookings from './pages/MyBookings';
 import ProviderDashboard from "./pages/ProviderDashboard";
 import Protected from "./components/Protected";
 
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
   { path: "services", element: <Protected />, children: [ { index: true, element: <Services /> }, { path: "new", element: <CreateService /> }, { path: ":id", element: <ServiceDetail /> }, { path: ":id/edit", element: <EditService /> } ] },
     { path: "become-provider", element: <Protected />, children: [ { index: true, element: <BecomeProvider /> } ] },
   { path: "account", element: <Protected />, children: [ { index: true, element: <Account /> } ] },
+  { path: "my-bookings", element: <Protected />, children: [ { index: true, element: <MyBookings /> } ] },
   { path: "provider", element: <Protected />, children: [ { index: true, element: <ProviderDashboard /> } ] },
     ],
   },
