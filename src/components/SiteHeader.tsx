@@ -20,13 +20,12 @@ export default function SiteHeader() {
         <nav className="qf-nav__links">
           <Link to="/">Inicio</Link>
           <Link to="/services">Servicios</Link>
-          {!token && <Link to="/login">Ingresar</Link>}
         </nav>
         <div className="qf-nav__cta">
           {!token ? (
             <>
               <Link className="btn btn--ghost" to="/register">Crear cuenta</Link>
-              <Link className="btn btn--primary" to="/become-provider">Quiero ser proveedor</Link>
+              <Link className="btn btn--primary" to="/login">Iniciar sesión</Link>
             </>
           ) : (
             <>

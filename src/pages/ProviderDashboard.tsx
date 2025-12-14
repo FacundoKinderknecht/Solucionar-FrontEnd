@@ -38,7 +38,7 @@ export default function ProviderDashboard() {
             <div className="card">
               <h3 className="h3">Métricas</h3>
               <ul>
-                <li>Servicios publicados: {data?.totals?.services_published ?? 0}</li>
+                <li>Servicios publicados: {myServices.length}</li>
                 <li>Reservas totales: {data?.totals?.reservations_total ?? 0}</li>
                 <li>Reservas completadas: {data?.totals?.reservations_completed ?? 0}</li>
                 <li>Favoritos: {data?.totals?.favorites_count ?? 0}</li>

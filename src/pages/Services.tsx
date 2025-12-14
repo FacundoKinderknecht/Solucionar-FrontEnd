@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { listCategories, listServices, type Category, type Service, bookService } from "../services/services";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export default function Services() {
   const [q, setQ] = useState("");
@@ -14,9 +14,15 @@ export default function Services() {
   const [bookingOpen, setBookingOpen] = useState<number | null>(null);
   const [bookingDatetime, setBookingDatetime] = useState<{ [key: number]: string }>({});
 
+  const location = useLocation();
   useEffect(() => {
     listCategories().then(setCategories).catch(()=>{});
-  }, []);
+    const params = new URLSearchParams(location.search);
+    const cat = params.get('category_id');
+    if (cat) setCategoryId(Number(cat));
+    const query = params.get('q');
+    if (query) setQ(query);
+  }, [location.search]);
 
   async function search() {
     setLoading(true); setErr(null);
@@ -31,6 +37,7 @@ export default function Services() {
   }
 
   useEffect(() => { (async ()=>{ await listServices().then(setItems).catch(()=>{}); })(); }, []);
+  useEffect(() => { (async ()=>{ if (categoryId || q) await search(); })(); }, [categoryId, q]);
 
   // new: validate against service availability dates (if present)
   function validateDatetimeForService(svc: Service, iso: string) {
@@ -104,7 +111,7 @@ export default function Services() {
             <div key={s.id} className="card">
               <div className="card__body">
                 <h3 className="h3">{s.title}</h3>
-                <div className="muted">{s.currency} {s.price.toFixed(2)} • {s.duration_min} min</div>
+                <div className="muted">{s.price_to_agree ? 'Precio a convenir' : `${s.currency} ${s.price.toFixed(2)}`} • {s.duration_min===0 ? 'duración indefinida' : `${s.duration_min} min`}</div>
                 <p className="muted" style={{marginTop:8}}>{s.description.slice(0,140)}{s.description.length>140?'…':''}</p>
                 <div style={{marginTop:8, display: 'flex', gap: '8px', flexDirection:'column'}}>
                   <div style={{display:'flex', gap:8}}>
