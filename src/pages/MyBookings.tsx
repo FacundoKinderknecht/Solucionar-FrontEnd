@@ -32,16 +32,20 @@ export default function MyBookings() {
             {bookings.map((booking) => (
               <div key={booking.id} className="card">
                 <div className="card__body">
-                  <h3 className="h3">{booking.service.title}</h3>
+                  <h3 className="h3">{booking.service?.title ?? 'Servicio eliminado'}</h3>
                   <div className="muted" style={{ marginBottom: 8, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <span>Estado: <strong>{booking.status}</strong></span>
-                    <span>Reservado el: {new Date(booking.created_at).toLocaleDateString()}</span>
+                    <span>Reservado el: {booking.created_at ? new Date(booking.created_at).toLocaleDateString() : '—'}</span>
                   </div>
                   <p className="muted">
-                    {booking.service.currency} {booking.service.price.toFixed(2)} • {booking.service.duration_min > 0 ? `${booking.service.duration_min} min` : 'Duración a convenir'}
+                    {booking.service ? `${booking.service.currency} ${booking.service.price.toFixed(2)} • ${booking.service.duration_min > 0 ? `${booking.service.duration_min} min` : 'Duración a convenir'}` : 'Sin detalles del servicio.'}
                   </p>
                   <div style={{ marginTop: 16 }}>
-                    <Link className="btn btn--ghost" to={`/services/${booking.service.id}`}>Ver Servicio</Link>
+                    {booking.service?.id ? (
+                      <Link className="btn btn--ghost" to={`/services/${booking.service.id}`}>Ver Servicio</Link>
+                    ) : (
+                      <button className="btn btn--ghost" disabled>Ver Servicio</button>
+                    )}
                   </div>
                 </div>
               </div>
