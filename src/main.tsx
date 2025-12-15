@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App";
 import "./styles/global.css";
+import "./styles/forms.css";
+import "./styles/service-detail.css";
+import "./styles/home.css";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";

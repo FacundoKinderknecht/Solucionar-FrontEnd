@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import "../styles/home.css";
 import BecomeProviderPromo from "../components/BecomeProviderPromo";
-import { listServices, listServiceImages, listCategories, type Service, type Category } from "../services/services";
+import {
+  listServices,
+  listServiceImages,
+  listCategories,
+  getReviewSummaries,
+  type Service,
+  type Category,
+  type ReviewSummary,
+} from "../services/services";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
@@ -9,6 +17,7 @@ import { Link } from "react-router-dom";
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [ratings, setRatings] = useState<Record<number, ReviewSummary>>({});
   const nav = useNavigate();
   const catTrackRef = useRef<HTMLDivElement | null>(null);
 
@@ -36,6 +45,19 @@ export default function Home() {
         setCovers(Object.fromEntries(entries));
       }
     })();
+  }, [services]);
+
+  useEffect(() => {
+    const ids = services.map((svc) => svc.id);
+    if (!ids.length) {
+      setRatings({});
+      return;
+    }
+    getReviewSummaries(ids)
+      .then((summaryList) => {
+        setRatings(Object.fromEntries(summaryList.map((item) => [item.service_id, item])));
+      })
+      .catch(() => setRatings({}));
   }, [services]);
 
   // Top rated placeholder: just slice existing; later can sort by rating
@@ -205,8 +227,12 @@ export default function Home() {
                       <div style={{display:'flex', alignItems:'center', gap:8, minHeight:48}}>
                         <div style={{fontWeight:800, fontSize:20}}>{svc.title}</div>
                       </div>
-                      <span style={{fontSize:13, background:'#eef2ff', color:'#0d2870', borderRadius:999, padding:'6px 10px', display:'inline-flex', alignItems:'center', gap:6}}>
-                        <span style={{color:'#f59e0b'}}>★</span> 4.8
+                      <span
+                        style={{fontSize:13, background:'#eef2ff', color:'#0d2870', borderRadius:999, padding:'6px 10px', display:'inline-flex', alignItems:'center', gap:6}}
+                        title={ratings[svc.id]?.count ? `${ratings[svc.id].count} reseñas` : "Sin reseñas"}
+                      >
+                        <span style={{color:'#f59e0b'}}>★</span>
+                        {ratings[svc.id]?.count ? ratings[svc.id].average.toFixed(1) : "Nuevo"}
                       </span>
                     </div>
                     {/* Removed preview to avoid duplication; details section below */}
