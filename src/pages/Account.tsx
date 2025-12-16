@@ -166,6 +166,8 @@ export default function Account() {
               <p>¿Querés publicar servicios? Convertite en proveedor completando tu perfil fiscal.</p>
               <Link className="btn btn--primary" to="/become-provider">Quiero ser proveedor</Link>
             </>
+          )}
+          </div>
           {activeTab==='metrics' && profile.role==='PROVIDER' && (
             <div className="card account-card" style={{flex:1}}>
               <h2 className="h2">Métricas</h2>
