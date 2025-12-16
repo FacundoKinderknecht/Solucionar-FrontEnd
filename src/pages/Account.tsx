@@ -526,6 +526,29 @@ export default function Account() {
           {activeTab === "providers" && (
             <div className="card account-card">
               <h2 className="h2">{isProvider ? "Panel de proveedor" : "Proveedores"}</h2>
+        <div className="card" style={{marginTop:16}}>
+          <h3 className="h3">Mis Reservas</h3>
+          <p>Ver el historial de todos los servicios que has reservado.</p>
+          <Link className="btn btn--primary" to="/my-bookings">Ver mis reservas</Link>
+        </div>
+
+        <div className="card" style={{marginTop:16}}>
+          <h3 className="h3">Proveedores</h3>
+          {profile.role === 'PROVIDER' ? (
+            <>
+              <p>Accede a tu panel de proveedor para ver métricas y configurar tus servicios.</p>
+              <Link className="btn btn--primary" to="/provider">Ver panel</Link>
+            </>
+          ) : (
+            <>
+              <p>¿Querés publicar servicios? Convertite en proveedor completando tu perfil fiscal.</p>
+              <Link className="btn btn--primary" to="/become-provider">Quiero ser proveedor</Link>
+            </>
+          )}
+          </div>
+          {activeTab==='metrics' && profile.role==='PROVIDER' && (
+            <div className="card account-card" style={{flex:1}}>
+              <h2 className="h2">Métricas</h2>
               <div className="account-card__content">
                 {isProvider ? (
                   <div className="provider-panel">

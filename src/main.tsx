@@ -20,6 +20,7 @@ import Account from "./pages/Account";
 import MyBookings from './pages/MyBookings';
 import ProviderDashboard from "./pages/ProviderDashboard";
 import Protected from "./components/Protected";
+import Payment from "./pages/Payment";
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,8 @@ const router = createBrowserRouter([
   { path: "account", element: <Protected />, children: [ { index: true, element: <Account /> } ] },
   { path: "my-bookings", element: <Protected />, children: [ { index: true, element: <MyBookings /> } ] },
   { path: "provider", element: <Protected />, children: [ { index: true, element: <ProviderDashboard /> } ] },
+  { path: "payments/new", element: <Protected />, children: [ { index: true, element: <Payment /> } ] },
+  { path: "payments/:id", element: <Protected />, children: [ { index: true, element: <Payment /> } ] },
     ],
   },
 ]);
