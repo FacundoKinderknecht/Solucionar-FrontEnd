@@ -9,6 +9,7 @@ import {
   type ReviewSummary,
 } from "../services/services";
 import { Link, useLocation } from "react-router-dom";
+import { AvailabilityFilterStrategy, CompositeFilterStrategy, PriceRangeFilterStrategy } from "../utils/serviceFilters";
 
 export default function Services() {
   const [q, setQ] = useState("");
@@ -79,13 +80,11 @@ export default function Services() {
   const filteredItems = useMemo(() => {
     const min = priceMin ? Number(priceMin) : undefined;
     const max = priceMax ? Number(priceMax) : undefined;
-    return items.filter(s => {
-      if (onlyAvailable && !s.active) return false;
-      const effectivePrice = s.price_to_agree ? 0 : s.price;
-      if (typeof min === 'number' && effectivePrice < min) return false;
-      if (typeof max === 'number' && effectivePrice > max) return false;
-      return true;
-    });
+    const strategy = new CompositeFilterStrategy([
+      new AvailabilityFilterStrategy(onlyAvailable),
+      new PriceRangeFilterStrategy(min, max),
+    ]);
+    return strategy.apply(items);
   }, [items, priceMin, priceMax, onlyAvailable]);
 
   return (

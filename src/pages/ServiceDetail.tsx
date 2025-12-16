@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { bookService, getService, listServiceImages, listServiceSchedule, listServiceReviews, type ReservationReview } from "../services/services";
+import { getService, listServiceImages, listServiceSchedule, listServiceReviews, type ReservationReview } from "../services/services";
 import { getMyProvider } from "../services/auth";
 import type { Service, ServiceImage, ServiceSchedule } from "../services/services";
 import { backendWeekdayToJs, isDateWithinRange, toDateInputValue } from "../utils/dates";
-import { getToken } from "../services/api";
 
 type NormalizedSlot = ServiceSchedule & { weekdayJs: number };
 const RATING_FILTERS = [5, 4, 3, 2, 1];
+
+type ProviderSummary = { user_id?: number | null } | null;
 
 const WEEKDAY_LABELS = [
   "Domingo",
@@ -32,16 +33,11 @@ export default function ServiceDetail() {
   const [svc, setSvc] = useState<Service | null>(null);
   const [images, setImages] = useState<ServiceImage[]>([]);
   const [schedule, setSchedule] = useState<ServiceSchedule[]>([]);
-  const [showReserve, setShowReserve] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [selectedTime, setSelectedTime] = useState("");
   const [notes, setNotes] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
-  const [bookingLoading, setBookingLoading] = useState(false);
   const [ownsService, setOwnsService] = useState(false);
   const [reviews, setReviews] = useState<ReservationReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -160,40 +156,32 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     if (bookingError) setBookingError(null);
-    if (bookingSuccess) setBookingSuccess(null);
-  }, [selectedDate, selectedSlot, bookingError, bookingSuccess]);
+  }, [selectedDate, selectedSlot, bookingError]);
 
   useEffect(() => {
-    if (!svc) return;
     let cancelled = false;
-    (async () => {
+
+    async function resolveOwnership() {
+      if (!svc?.provider_id) {
+        setOwnsService(false);
+        return;
+      }
       try {
-        const profile = await getMyProvider();
-        if (!cancelled) setOwnsService(Boolean(profile && profile.id === svc.provider_id));
+        const profile = (await getMyProvider()) as ProviderSummary;
+        if (cancelled) return;
+        const viewerUserId = typeof profile?.user_id === "number" ? profile.user_id : null;
+        setOwnsService(viewerUserId === svc.provider_id);
       } catch {
         if (!cancelled) setOwnsService(false);
       }
-    })();
-    return () => { cancelled = true; };
-  }, [svc?.provider_id, svc, setOwnsService]);
-  useEffect(()=>{
-    if (!selectedDate) { setAvailableTimes([]); return; }
-    const d = new Date(selectedDate + 'T00:00:00');
-    const wk = d.getDay();
-    const slots = schedule.filter(s=>s.weekday === wk);
-    const times: string[] = [];
-    const toMinutes = (t:string)=>{ const [hh,mm]=t.split(':').map(Number); return hh*60+mm; };
-    const fromMinutesToStr = (m:number)=>{ const hh = Math.floor(m/60).toString().padStart(2,'0'); const mm = (m%60).toString().padStart(2,'0'); return `${hh}:${mm}`; };
-    for (const s of slots) {
-      const start = toMinutes(s.time_from);
-      const end = toMinutes(s.time_to);
-      for (let m = start; m + 15 <= end; m += 30) { // 30-min steps
-        times.push(fromMinutesToStr(m));
-      }
     }
-    setAvailableTimes(times);
-  }, [selectedDate, schedule]);
 
+    resolveOwnership();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [svc?.provider_id]);
   if (err) return <div className="container"><div className="muted" style={{color:'#b00020'}}>{err}</div></div>;
   if (!svc) return <div className="container"><div className="muted">Cargando…</div></div>;
 
@@ -208,11 +196,14 @@ export default function ServiceDetail() {
     const friendly = tz.split("/").pop()?.replaceAll("_", " ");
     return friendly || tz;
   };
-  const contactHref = `/providers/${svc.provider_id}`;
-  const bookingDisabled = !selectedDate || !selectedSlot || bookingLoading || ownsService;
+  const bookingDisabled = !selectedDate || !selectedSlot || ownsService;
 
-  async function handleBooking() {
+  function handleBooking() {
     if (!serviceId) return;
+    if (!svc) {
+      setBookingError("Servicio no disponible.");
+      return;
+    }
     if (!selectedDate) {
       setBookingError("Elegí una fecha disponible.");
       return;
@@ -225,19 +216,28 @@ export default function ServiceDetail() {
       setBookingError("No podés reservar tu propio servicio.");
       return;
     }
-    setBookingLoading(true);
-    setBookingError(null);
-    setBookingSuccess(null);
-    try {
-      const reservationIso = new Date(`${selectedDate}T${selectedSlot}:00`).toISOString();
-      await bookService(serviceId, reservationIso, notes.trim() ? notes.trim() : undefined);
-      setBookingSuccess("Reserva creada. Te avisaremos cuando el proveedor la confirme.");
-      setNotes("");
-    } catch (error) {
-      setBookingError((error as Error).message);
-    } finally {
-      setBookingLoading(false);
+
+    const selectedSlotRange = slotsForSelectedDay.find((slot) => slot.time_from === selectedSlot);
+    if (!selectedSlotRange) {
+      setBookingError("Seleccioná un horario válido.");
+      return;
     }
+
+    const rawTime = selectedSlotRange.time_from;
+    const normalizedTime = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
+    const reservationDatetime = new Date(`${selectedDate}T${normalizedTime}`).toISOString();
+    const searchParams = new URLSearchParams({
+      service_id: String(serviceId),
+      reservation_datetime: reservationDatetime,
+    });
+    if (!svc.price_to_agree) {
+      searchParams.append("monto", String(svc.price));
+      searchParams.append("moneda", svc.currency);
+    }
+    if (notes.trim()) {
+      searchParams.append("notes", notes.trim());
+    }
+    window.location.href = `/payments/new?${searchParams.toString()}`;
   }
 
   return (
@@ -278,16 +278,13 @@ export default function ServiceDetail() {
             </div>
           </div>
           <p className="service-detail__description">{svc.description}</p>
-          <div className="service-detail__actions">
-            <a className="btn btn--primary" href={contactHref}>Contactar proveedor</a>
-            <button className="btn btn--primary" onClick={async()=>{
-              const token = getToken();
-              if (!token) { window.location.href = '/login'; return; }
-              // open reservation picker
-              setShowReserve(true);
-            }}>Reservar</button>
-            <a className="btn btn--ghost" href={`/services/${svc.id}/edit`}>Editar</a>
-          </div>
+          {ownsService && (
+            <div className="service-detail__actions">
+              <a className="btn btn--ghost" href={`/services/${svc.id}/edit`}>
+                Editar
+              </a>
+            </div>
+          )}
         </div>
 
         <aside className="service-detail__side">
@@ -325,7 +322,7 @@ export default function ServiceDetail() {
                       key={`${slot.weekday}-${slot.time_from}`}
                       type="button"
                       className={`slot-button ${selectedSlot === slot.time_from ? "slot-button--active" : ""}`}
-                      onClick={() => setSelectedSlot(slot.time_from)}
+                      onClick={() => setSelectedSlot((prev) => (prev === slot.time_from ? "" : slot.time_from))}
                     >
                       <strong>{slot.time_from} - {slot.time_to}</strong>
                       <span>{formatTimezone(slot.timezone)}</span>
@@ -345,66 +342,19 @@ export default function ServiceDetail() {
                 {bookingError && (
                   <div className="availability-feedback availability-feedback--error">{bookingError}</div>
                 )}
-                {bookingSuccess && (
-                  <div className="availability-feedback availability-feedback--success">{bookingSuccess}</div>
-                )}
                 <button
                   type="button"
                   className="btn btn--primary availability-cta"
                   disabled={bookingDisabled || !slotsForSelectedDay.length}
                   onClick={handleBooking}
                 >
-                  {bookingLoading ? "Reservando…" : "Confirmar reserva"}
+                  Confirmar reserva
                 </button>
               </>
             )}
           </div>
         </aside>
       </div>
-        {/* Reservation modal (simple) */}
-        {showReserve && (
-          <div className="modal">
-            <div className="modal__content card">
-              <h3>Reservar {svc.title}</h3>
-              <div>
-                <label>Fecha</label>
-                <input type="date" value={selectedDate} onChange={(e)=>{ setSelectedDate(e.target.value); setSelectedTime(''); }} min={svc.availability_start_date ?? undefined} max={svc.availability_end_date ?? undefined} />
-              </div>
-              <div style={{marginTop:8}}>
-                <label>Horario disponible</label>
-                {selectedDate ? (
-                  availableTimes.length>0 ? (
-                    <select value={selectedTime} onChange={(e)=>setSelectedTime(e.target.value)}>
-                      <option value="">-- elegir --</option>
-                      {availableTimes.map(t=> <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  ) : <div className="muted">No hay horarios para esa fecha.</div>
-                ) : <div className="muted">Seleccioná una fecha para ver horarios.</div>}
-              </div>
-              <div style={{marginTop:12}}>
-                <label>Notas (opcional)</label>
-                <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}></textarea>
-              </div>
-              <div style={{marginTop:12}}>
-                <button className="btn btn--primary" onClick={async()=>{
-                  if (!selectedDate || !selectedTime) return alert('Seleccioná fecha y horario');
-                  try {
-                    const reservation_datetime = `${selectedDate}T${selectedTime}:00`;
-                    const params = new URLSearchParams();
-                    params.append('service_id', String(svc.id));
-                    params.append('reservation_datetime', reservation_datetime);
-                    if (!svc.price_to_agree) { params.append('monto', String(svc.price)); params.append('moneda', svc.currency); }
-                    if (notes) params.append('notes', notes);
-                    // navigate to payment creation page where user selects gateway
-                    window.location.href = `/payments/new?${params.toString()}`;
-                  } catch (e) { alert((e as Error).message); }
-                }}>Confirmar y pagar</button>
-                <button className="btn btn--ghost" onClick={()=>setShowReserve(false)} style={{marginLeft:8}}>Cancelar</button>
-              </div>
-            </div>
-          </div>
-        )}
-
       <div className="container service-reviews-container">
         <div className="card service-reviews-card">
             <div className="service-reviews-card__header">

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import "../styles/home.css";
 import BecomeProviderPromo from "../components/BecomeProviderPromo";
 import {
@@ -6,18 +6,25 @@ import {
   listServiceImages,
   listCategories,
   getReviewSummaries,
+  listServiceReviews,
   type Service,
   type Category,
   type ReviewSummary,
+  type ReservationReview,
 } from "../services/services";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 // Simple carousel without external deps
+type DisplayCategory = { id: number; name: string; fromCatalog: boolean };
+type DisplayReview = ReservationReview & { serviceId: number; serviceTitle: string };
+
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [ratings, setRatings] = useState<Record<number, ReviewSummary>>({});
+  const [showcaseReviews, setShowcaseReviews] = useState<DisplayReview[]>([]);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const nav = useNavigate();
   const catTrackRef = useRef<HTMLDivElement | null>(null);
 
@@ -60,12 +67,50 @@ export default function Home() {
       .catch(() => setRatings({}));
   }, [services]);
 
+  useEffect(() => {
+    let canceled = false;
+    if (!services.length) {
+      setShowcaseReviews([]);
+      setActiveReviewIndex(0);
+      return undefined;
+    }
+    (async () => {
+      const portion = services.slice(0, 6);
+      const aggregated: DisplayReview[] = [];
+      for (const svc of portion) {
+        try {
+          const revs = await listServiceReviews(svc.id);
+          revs.forEach((rev) => {
+            aggregated.push({ ...rev, serviceId: svc.id, serviceTitle: svc.title });
+          });
+        } catch {
+          /* ignore review fetch errors */
+        }
+      }
+      if (!canceled) {
+        setShowcaseReviews(aggregated);
+        setActiveReviewIndex(0);
+      }
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, [services]);
+
+  useEffect(() => {
+    if (showcaseReviews.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setActiveReviewIndex((prev) => (prev + 1) % showcaseReviews.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [showcaseReviews]);
+
   // Top rated placeholder: just slice existing; later can sort by rating
   // Use first 3 services for featured cards (match design)
   const featured = useMemo(() => services.slice(0, 3), [services]);
 
   // Build an extended category list including remote services
-  const extendedCategories = useMemo(() => {
+  const displayCategories: DisplayCategory[] = useMemo(() => {
     const base = categories.map((c) => c.name.toLowerCase());
     const extras = [
       "Psicología",
@@ -89,14 +134,26 @@ export default function Home() {
       "Coaching",
       "Gestión de proyectos",
     ];
-    const merged = [
-      ...categories.map((c) => ({ id: c.id, name: c.name })),
+    const merged: DisplayCategory[] = [
+      ...categories.map((c) => ({ id: c.id, name: c.name, fromCatalog: true })),
       ...extras
         .filter((e) => !base.includes(e.toLowerCase()))
-        .map((e, idx) => ({ id: 10000 + idx, name: e })),
+        .map((e, idx) => ({ id: 10000 + idx, name: e, fromCatalog: false })),
     ];
     return merged;
   }, [categories]);
+
+  const handleCategoryClick = useCallback((cat: DisplayCategory) => {
+    if (cat.fromCatalog) {
+      nav(`/services?category_id=${cat.id}`);
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("q", cat.name);
+    nav(`/services?${params.toString()}`);
+  }, [nav]);
+
+  const currentReview = showcaseReviews[activeReviewIndex] ?? null;
 
   // Ensure wheel over track scrolls horizontally with smooth handling and prevents page scroll
   useEffect(() => {
@@ -151,11 +208,11 @@ export default function Home() {
               overscrollBehaviorX:'contain'
             }}
           >
-          {extendedCategories.map((cat) => (
+          {displayCategories.map((cat) => (
             <button
-              key={cat.id}
+              key={`${cat.fromCatalog ? "cat" : "extra"}-${cat.id}`}
               className="btn btn--ghost"
-              onClick={() => nav(`/services?category_id=${cat.id}`)}
+              onClick={() => handleCategoryClick(cat)}
               style={{
                 whiteSpace:'nowrap',
                 padding:'12px 20px',
@@ -277,24 +334,54 @@ export default function Home() {
 
       {/* Removed CTA gradient band */}
 
-      {/* Booking form */}
-      <section style={{padding:'3.5rem 1rem'}}>
+      {/* Reviews spotlight */}
+      <section style={{padding:'3.5rem 1rem', background:'#f8fafc'}}>
         <div className="container" style={{maxWidth:980, margin:'0 auto'}}>
-          <h2 style={{margin:'0 0 18px 0', fontSize:30}}>Book a Service</h2>
-          <form style={{border:'1px solid #e7eaf0', borderRadius:16, padding:20, background:'#fff', boxShadow:'0 8px 20px rgba(13,40,112,0.06)'}}>
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:16}}>
-              <input className="input" placeholder="Service requested" />
-              <input className="input" placeholder="Your name" />
-              <input className="input" placeholder="Email" />
-              <input className="input" placeholder="Phone" />
-              <input className="input" placeholder="Address" />
-              <input className="input" placeholder="Preferred date" />
+          <h2 style={{margin:'0 0 18px 0', fontSize:30}}>Lo que dicen nuestros clientes</h2>
+          {!currentReview ? (
+            <div className="card" style={{padding:32, textAlign:'center'}}>
+              <p className="muted">Todavía no hay reseñas públicas para mostrar.</p>
             </div>
-            <textarea className="textarea" placeholder="Describe your need" style={{marginTop:16, width:'100%', minHeight:120, border:'1px solid #e7eaf0', borderRadius:12, padding:12}} />
-            <div style={{marginTop:16, display:'flex', justifyContent:'flex-end'}}>
-              <button className="btn btn--primary" type="button" style={{padding:'12px 18px'}}>Submit Request</button>
+          ) : (
+            <div className="review-carousel card">
+              <div className="review-card__quote">
+                “{currentReview.comment?.trim() || "Sin comentario"}”
+              </div>
+              <div className="review-card__rating">
+                <span>
+                  {"★".repeat(currentReview.rating)}
+                  {"☆".repeat(5 - currentReview.rating)}
+                </span>
+                <p className="muted-small">{currentReview.rating} / 5</p>
+              </div>
+              <div className="review-card__meta">
+                <div>
+                  <strong style={{display:'block'}}>{currentReview.serviceTitle}</strong>
+                  <span className="muted-small">Reseña del {new Date(currentReview.created_at).toLocaleDateString("es-AR")}</span>
+                </div>
+                <Link className="btn btn--ghost" to={`/services/${currentReview.serviceId}`}>
+                  Ver servicio
+                </Link>
+              </div>
+              <div className="review-card__footer">
+                <span className="muted-small">Reserva #{currentReview.reservation_id}</span>
+                <span className="muted-small">Cliente #{currentReview.client_id}</span>
+              </div>
+              {showcaseReviews.length > 1 && (
+                <div className="review-carousel__dots">
+                  {showcaseReviews.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`review-carousel__dot ${idx === activeReviewIndex ? "active" : ""}`}
+                      aria-label={`Ver reseña ${idx + 1}`}
+                      onClick={() => setActiveReviewIndex(idx)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </form>
+          )}
         </div>
       </section>
 

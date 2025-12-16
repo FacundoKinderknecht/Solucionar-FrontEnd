@@ -6,6 +6,7 @@ import "./styles/global.css";
 import "./styles/forms.css";
 import "./styles/service-detail.css";
 import "./styles/home.css";
+import "./styles/payment.css";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
