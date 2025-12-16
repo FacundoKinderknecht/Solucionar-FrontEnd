@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { bookService, getService, listServiceImages, listServiceSchedule, listServiceReviews, type ReservationReview } from "../services/services";
 import { getMyProvider } from "../services/auth";
 import type { Service, ServiceImage, ServiceSchedule } from "../services/services";
-import { createPayment } from "../services/payments";
 import { backendWeekdayToJs, isDateWithinRange, toDateInputValue } from "../utils/dates";
 import { getToken } from "../services/api";
 
@@ -39,9 +38,7 @@ export default function ServiceDetail() {
   const [selectedTime, setSelectedTime] = useState("");
   const [notes, setNotes] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [notes, setNotes] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -164,7 +161,7 @@ export default function ServiceDetail() {
   useEffect(() => {
     if (bookingError) setBookingError(null);
     if (bookingSuccess) setBookingSuccess(null);
-  }, [selectedDate, selectedSlot]);
+  }, [selectedDate, selectedSlot, bookingError, bookingSuccess]);
 
   useEffect(() => {
     if (!svc) return;
@@ -178,7 +175,7 @@ export default function ServiceDetail() {
       }
     })();
     return () => { cancelled = true; };
-  }, [svc?.provider_id]);
+  }, [svc?.provider_id, svc, setOwnsService]);
   useEffect(()=>{
     if (!selectedDate) { setAvailableTimes([]); return; }
     const d = new Date(selectedDate + 'T00:00:00');
@@ -211,6 +208,7 @@ export default function ServiceDetail() {
     const friendly = tz.split("/").pop()?.replaceAll("_", " ");
     return friendly || tz;
   };
+  const contactHref = `/providers/${svc.provider_id}`;
   const bookingDisabled = !selectedDate || !selectedSlot || bookingLoading || ownsService;
 
   async function handleBooking() {

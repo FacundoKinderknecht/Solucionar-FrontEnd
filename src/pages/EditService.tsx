@@ -4,6 +4,11 @@ import { listCategories, getService, updateService, listServiceImages, setServic
 import type { Category, Service, ServiceImage, ServiceSchedule } from "../services/services";
 import { isInvalidDateRange, toDateInputValue } from "../utils/dates";
 
+type EditableService = Service & {
+  availability_start_date?: string | null;
+  availability_end_date?: string | null;
+};
+
 export default function EditService() {
   const { id } = useParams();
   const serviceId = Number(id);
@@ -47,10 +52,14 @@ export default function EditService() {
         setRadiusKm(typeof s.radius_km === "number" ? s.radius_km : '');
         setPriceToAgree(s.price_to_agree);
         setLocationNote(s.location_note ?? '');
-        setAvailabilityStart(toDateInputValue((s as any).availability_start_date));
-        setAvailabilityEnd(toDateInputValue((s as any).availability_end_date));
+        const svcWithAvailability = s as EditableService;
+        setAvailabilityStart(toDateInputValue(svcWithAvailability.availability_start_date));
+        setAvailabilityEnd(toDateInputValue(svcWithAvailability.availability_end_date));
         setImages(imgs); setSchedule(sch);
-      } catch (e) { setLoadError((e as Error).message); }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "No se pudieron cargar los datos del servicio.";
+        setLoadError(message);
+      }
       finally { setLoading(false); }
     })();
   }, [serviceId]);
@@ -98,7 +107,11 @@ export default function EditService() {
       await setServiceImages(svc.id, images);
       await setServiceSchedule(svc.id, schedule);
       nav(`/services/${svc.id}`);
-    } catch (e) { setFormError((e as Error).message); } finally { setSaving(false); }
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "No se pudo guardar el servicio.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) return <div className="container"><p className="muted">Cargando…</p></div>;
