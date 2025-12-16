@@ -1,4 +1,4 @@
-import { getJSON, postJSON, putJSON } from "./api";
+import { getJSON, postJSON, putJSON, patchJSON } from "./api";
 
 export type Category = { id: number; name: string; parent_id?: number | null; slug: string };
 export type Service = {
@@ -40,6 +40,40 @@ export type ServiceCreate = {
 export type ServiceImage = { id?: number; service_id?: number; url: string; is_cover?: boolean; sort_order?: number };
 export type ServiceSchedule = { id?: number; service_id?: number; weekday: number; time_from: string; time_to: string; timezone?: string };
 
+export type ReservationStatus =
+  | "pending"
+  | "confirmed"
+  | "cancelled_by_client"
+  | "cancelled_by_provider"
+  | "completed";
+
+export type Reservation = {
+  id: number;
+  service_id: number;
+  client_id: number;
+  reservation_datetime: string;
+  notes?: string | null;
+  status: ReservationStatus;
+  created_at: string;
+  review?: ReservationReview | null;
+};
+
+export type ReservationReview = {
+  id: number;
+  reservation_id: number;
+  service_id: number;
+  client_id: number;
+  rating: number;
+  comment?: string | null;
+  created_at: string;
+};
+
+export type ReviewSummary = {
+  service_id: number;
+  average: number;
+  count: number;
+};
+
 // Categories
 export const listCategories = () => getJSON<Category[]>("/services/categorias");
 
@@ -75,22 +109,34 @@ export const setServiceSchedule = (serviceId: number, slots: ServiceSchedule[]) 
 export const listServiceSchedule = (serviceId: number) => getJSON<ServiceSchedule[]>(`/services/${serviceId}/horarios`);
 
 // Bookings
-export type Booking = {
-  id: number;
-  service_id: number;
-  customer_id: number;
-  provider_id: number;
-  status: string; // ej: PENDING, CONFIRMED, CANCELED
-  created_at: string;
-  updated_at: string;
-  service: Service;
+export const bookService = (
+  serviceId: number,
+  reservation_datetime: string,
+  notes?: string,
+) => postJSON<Reservation>("/reservations/", { service_id: serviceId, reservation_datetime, notes });
+
+export const listMyBookings = () => getJSON<Reservation[]>("/reservations/my-reservations");
+export const listProviderReservations = () => getJSON<Reservation[]>("/reservations/provider-reservations");
+export const updateReservationStatus = (reservationId: number, status: ReservationStatus) =>
+  patchJSON<Reservation>(`/reservations/${reservationId}/status`, { status });
+
+export const createReservationReview = (
+  reservationId: number,
+  rating: number,
+  comment?: string,
+) => postJSON<ReservationReview>("/reviews/", {
+  reservation_id: reservationId,
+  rating,
+  comment,
+});
+
+export const listServiceReviews = (serviceId: number) => getJSON<ReservationReview[]>(`/reviews/service/${serviceId}`);
+export const getReviewSummaries = (serviceIds: number[]) => {
+  if (!serviceIds.length) return Promise.resolve<ReviewSummary[]>([]);
+  const params = new URLSearchParams();
+  serviceIds.forEach((id) => params.append("service_ids", String(id)));
+  return getJSON<ReviewSummary[]>(`/reviews/summary?${params.toString()}`);
 };
-
-// Use trailing slash to avoid 307 redirect from FastAPI when route is defined as "/"
-export const bookService = (serviceId: number, reservation_datetime?: string) =>
-  postJSON<Booking>("/reservations/", { service_id: serviceId, reservation_datetime });
-
-export const listMyBookings = () => getJSON<Booking[]>("/reservations/my-reservations");
 
 // Mine
 export const listMyServices = (active?: boolean) => {
